@@ -24,3 +24,21 @@ def log_in(request: OAuth2PasswordRequestForm, db: Session):
         token_type="bearer"
     )
     return token
+
+
+def log_in_while_creation(username: str, password: str, db: Session):
+    user = db.query(User).filter(User.email == username).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"Invalid Email address")
+
+    if not Hash.verify(user.password, password):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"Incorrect password")
+
+    access_token = create_access_token(data={"sub": user.email})
+    token = Token(
+        access_token=access_token,
+        token_type="bearer"
+    )
+    return token

@@ -4,7 +4,7 @@ from services.user_service.user_model import CreateUserModel, UpdateUserModel
 from database.models import User
 from datetime import datetime
 from database.hashing import Hash
-
+from services.auth_service.auth import log_in_while_creation
 
 def create(request: CreateUserModel, db: Session):
     new_user = User(
@@ -16,8 +16,8 @@ def create(request: CreateUserModel, db: Session):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-
-    return new_user
+    token = log_in_while_creation(request.email, request.password, db)
+    return { 'user': new_user, 'token': token}
 
 
 def get_list(db: Session):
