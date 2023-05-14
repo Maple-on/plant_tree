@@ -1,23 +1,25 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from services.user_service.user_model import CreateUserModel, UpdateUserModel
-from database.models import User
+from services.user_service.user_model import CreateUserModel, UpdateUserModel, RewardModel
+from database.models import User, Reward
 from datetime import datetime
 from database.hashing import Hash
 from services.auth_service.auth import log_in_while_creation
+
 
 def create(request: CreateUserModel, db: Session):
     new_user = User(
         name=request.name,
         email=request.email,
         password=Hash.bcrypt(request.password),
-        phone=request.phone
+        phone=request.phone,
+        role=request.role
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     token = log_in_while_creation(request.email, request.password, db)
-    return { 'user': new_user, 'token': token}
+    return {'user': new_user, 'token': token}
 
 
 def get_list(db: Session):
@@ -28,11 +30,25 @@ def get_list(db: Session):
 
 def get_by_id(id: int, db: Session):
     user = db.query(User).filter(User.id == id).first()
+    rewards = db.query(Reward).filter(Reward.user_id == id).all()
+    reward_list = []
+    all_sum = 0
+    for reward in rewards:
+        model = RewardModel(
+            id=reward.id,
+            name=reward.name,
+            description=reward.description,
+            points=reward.points
+        )
+        all_sum += reward.points
+        reward_list.append(model)
+
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"User with id {id} not found")
 
-    return user
+
+    return {'user': user, 'rewards': reward_list, 'reward_sum': all_sum}
 
 
 def update(id: int, request: UpdateUserModel, db: Session):

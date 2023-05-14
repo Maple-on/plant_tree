@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import text
 from decimal import Decimal
 from services.tree_order_service.order_model import CreateOrderModel
-from database.models import TreeType, TreeOrder, Donation, TreeProgress, Location, User
+from database.models import TreeType, TreeOrder, Donation, TreeProgress, Location, User, Reward
 from sqlalchemy import desc
 
 def create(request: CreateOrderModel, db: Session):
@@ -11,6 +11,7 @@ def create(request: CreateOrderModel, db: Session):
     location_id = create_location(request.location_name, request.latitude, request.longitude, db)
     progress_id = create_progress(db)
     donation_id = create_donation(request.donation_amount, db)
+    create_reward(request.user_id, "New Donation", "Thank you for your newly made donation", request.donation_amount,db)
 
     new_order = TreeOrder(
         type_id=request.type_id,
@@ -130,7 +131,7 @@ def check_if_type_exists(type_id: int, db: Session):
     tree_type = db.get(TreeType, type_id)
     if not tree_type:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Tree type with id {id} not found")
+                            detail=f"Tree type with id {type_id} not found")
 
 
 def create_location(name: str, latitude: Decimal, longitude: Decimal, db: Session):
@@ -164,3 +165,17 @@ def create_donation(amount: Decimal, db: Session):
     db.refresh(new_donation)
 
     return new_donation.id
+
+
+def create_reward(user_id: int, name: str, description: str, points: Decimal, db: Session):
+    new_reward = Reward(
+        user_id=user_id,
+        name=name,
+        description=description,
+        points=points
+    )
+    db.add(new_reward)
+    db.commit()
+    db.refresh(new_reward)
+
+    return new_reward

@@ -1,6 +1,13 @@
 from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime
+from enum import Enum
+from decimal import Decimal
+
+
+class Role(str, Enum):
+    user = "User"
+    admin = "Admin"
 
 
 class UserModel(BaseModel):
@@ -19,9 +26,17 @@ class CreateUserModel(BaseModel):
     email: str
     password: str
     phone: str
+    role: Optional[Role]
 
 
 class UpdateUserModel(BaseModel):
     name: Optional[str]
     password: Optional[str]
     phone: Optional[str]
+
+
+class RewardModel(BaseModel):
+    id: int
+    name: str
+    description: str
+    points: Decimal
