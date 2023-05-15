@@ -8,6 +8,7 @@ from services.auth_service.auth import log_in_while_creation
 
 
 def create(request: CreateUserModel, db: Session):
+    check_if_user_exists(request.email, db)
     new_user = User(
         name=request.name,
         email=request.email,
@@ -77,3 +78,10 @@ def delete(id: int, db: Session):
     db.commit()
 
     return status.HTTP_204_NO_CONTENT
+
+
+def check_if_user_exists(email: str, db: Session):
+    user = db.query(User).filter(User.email == email).first()
+    if user:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"User with email {email} already exists")

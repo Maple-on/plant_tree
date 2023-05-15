@@ -19,9 +19,11 @@ def log_in(request: OAuth2PasswordRequestForm, db: Session):
                             detail=f"Incorrect password")
 
     access_token = create_access_token(data={"sub": user.email})
+    user_id = get_user_id(request.username, db)
     token = Token(
         access_token=access_token,
-        token_type="bearer"
+        token_type="bearer",
+        user_id=user_id
     )
     return token
 
@@ -42,3 +44,12 @@ def log_in_while_creation(username: str, password: str, db: Session):
         token_type="bearer"
     )
     return token
+
+
+def get_user_id(email: str, db: Session):
+    user = db.query(User).filter(User.email == email).first()
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"User with email {email} not found")
+    return user.id
