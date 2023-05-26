@@ -1,10 +1,9 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
-from sqlalchemy import text
 from decimal import Decimal
 from services.tree_order_service.order_model import CreateOrderModel
 from database.models import TreeType, TreeOrder, Donation, TreeProgress, Location, User, Reward
-from sqlalchemy import desc
+from sqlalchemy import asc
 
 def create(request: CreateOrderModel, db: Session):
     check_if_type_exists(request.type_id, db)
@@ -78,7 +77,8 @@ def get_by_id(order_id: int, db: Session):
     db.close()
     return order_list
 
-def get_list(offset: int, limit: int, db: Session):
+
+def get_list(offset: int, limit: int, user_id: int, db: Session):
     orders = db.query(
             TreeOrder.id,
             User.id,
@@ -100,7 +100,12 @@ def get_list(offset: int, limit: int, db: Session):
         .join(TreeProgress, TreeOrder.progress_id == TreeProgress.id)\
         .join(Donation, TreeOrder.donation_id == Donation.id)\
         .join(Location, TreeOrder.location_id == Location.id)\
-        .order_by(desc(TreeOrder.created_at)).offset(offset).limit(limit).all()
+        .order_by(asc(TreeOrder.created_at))
+
+    if user_id:
+        orders = orders.filter(TreeOrder.user_id == user_id)
+
+    orders = orders.offset(offset).limit(limit).all()
 
     order_list = [
         {

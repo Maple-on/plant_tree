@@ -97,3 +97,36 @@ class TreeOrder(Base):
     location = relationship("Location", back_populates="tree_order")
     progress = relationship("TreeProgress", back_populates="tree_order")
     donation = relationship("Donation", back_populates="tree_order")
+
+
+class News(Base):
+    __tablename__ = 'news'
+
+    id = Column(Integer, Sequence('unique_id'), primary_key=True, server_default=text("nextval('unique_id')"))
+    author = Column(Integer, nullable=False)
+    description = Column(String, nullable=True)
+    subject = Column(String, nullable=False)
+    image_url = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.now)
+
+
+class Advertiser(Base):
+    __tablename__ = 'advertisers'
+
+    id = Column(Integer, Sequence('unique_id'), primary_key=True, server_default=text("nextval('unique_id')"))
+    name = Column(Integer, nullable=False)
+    description = Column(String, nullable=False)
+    website = Column(String, nullable=True)
+
+    advertisement = relationship("Advertisement", back_populates="advertiser")
+
+
+class Advertisement(Base):
+    __tablename__ = 'advertisements'
+
+    id = Column(Integer, Sequence('unique_id'), primary_key=True, server_default=text("nextval('unique_id')"))
+    advertiser_id = Column(Integer, ForeignKey("advertisers.id", ondelete="CASCADE"))
+    description = Column(String, nullable=True)
+    image = Column(String, nullable=False)
+
+    advertiser = relationship("Advertiser", back_populates="advertisement")
