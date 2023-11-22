@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from decimal import Decimal
 from services.tree_order_service.order_model import CreateOrderModel
 from database.models import TreeType, TreeOrder, Donation, TreeProgress, Location, User, Reward
-from sqlalchemy import asc
+from sqlalchemy import asc, text
 
 
 def create(request: CreateOrderModel, db: Session):
@@ -12,6 +12,30 @@ def create(request: CreateOrderModel, db: Session):
     progress_id = create_progress(db)
     donation_id = create_donation(request.donation_amount, db)
     create_reward(request.user_id, "New Donation", "Thank you for your newly made donation", request.donation_amount * tree_price, db)
+
+    new_order = TreeOrder(
+        type_id=request.type_id,
+        user_id=request.user_id,
+        location_id=location_id,
+        progress_id=progress_id,
+        donation_id=donation_id
+    )
+
+    db.add(new_order)
+    db.commit()
+    db.refresh(new_order)
+
+    return new_order
+
+
+def exchange_reward(request: CreateOrderModel, db: Session):
+    tree_price = check_if_type_exists_and_return_tree_price(request.type_id, db)
+    exchange_reward_points = request.donation_amount * tree_price * 10
+    check_rewards_points(exchange_reward_points, request.user_id, db)
+    update_reward_amount(exchange_reward_points, request.user_id, db)
+    location_id = create_location(request.location_name, request.latitude, request.longitude, db)
+    progress_id = create_progress(db)
+    donation_id = create_donation(request.donation_amount, db, 1)
 
     new_order = TreeOrder(
         type_id=request.type_id,
@@ -143,6 +167,14 @@ def check_if_type_exists_and_return_tree_price(type_id: int, db: Session):
     return tree_type.price
 
 
+def check_rewards_points(exchange_reward_points: Decimal, user_id: int, db: Session):
+    sql = f"SELECT SUM(points) FROM rewards WHERE user_id = '{user_id}'"
+    actual_reward_points = db.execute(text(sql)).first()
+    if exchange_reward_points > actual_reward_points[0]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"You don't have sufficient amount of reward points")
+
+
 def create_location(name: str, latitude: Decimal, longitude: Decimal, db: Session):
     new_location = Location(
         name=name,
@@ -165,9 +197,10 @@ def create_progress(db: Session):
     return new_progress.id
 
 
-def create_donation(amount: Decimal, db: Session):
+def create_donation(amount: Decimal, db: Session, donation_type: int = 0):
     new_donation = Donation(
-        amount=amount
+        amount=amount,
+        donation_type=donation_type
     )
     db.add(new_donation)
     db.commit()
@@ -189,3 +222,15 @@ def create_reward(user_id: int, name: str, description: str, points: Decimal, db
     db.refresh(new_reward)
 
     return new_reward
+
+
+def update_reward_amount(points: Decimal, user_id: int, db: Session):
+    new_reward = Reward(
+        user_id=user_id,
+        name="Exchange",
+        description="Thank you for exchanging rewards for new donations",
+        points=-points
+    )
+    db.add(new_reward)
+    db.commit()
+    db.refresh(new_reward)

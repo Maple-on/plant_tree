@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from services.tree_order_service.order_model import CreateOrderModel
-from services.tree_order_service.order import create, get_by_id, get_list
+from services.tree_order_service.order import create, get_by_id, get_list, exchange_reward
 from database import database
 from database.oauth2 import get_current_user
 from services.user_service.user_model import UserModel
@@ -28,6 +28,11 @@ def Get_by_id(id: int, session: Session = Depends(get_db)):
 @router.post('/', status_code=status.HTTP_201_CREATED)
 def Create(request: CreateOrderModel = Depends(), session: Session = Depends(get_db), current_user: UserModel = Depends(get_current_user)):
     return create(request, session)
+
+
+@router.put('/', status_code=status.HTTP_201_CREATED)
+def Exchange(request: CreateOrderModel, session: Session = Depends(get_db), current_user: UserModel = Depends(get_current_user)):
+    return exchange_reward(request, session)
 
 
 # @router.put('/{id}', status_code=status.HTTP_202_ACCEPTED)
