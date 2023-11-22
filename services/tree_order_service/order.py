@@ -5,12 +5,13 @@ from services.tree_order_service.order_model import CreateOrderModel
 from database.models import TreeType, TreeOrder, Donation, TreeProgress, Location, User, Reward
 from sqlalchemy import asc
 
+
 def create(request: CreateOrderModel, db: Session):
-    check_if_type_exists(request.type_id, db)
+    tree_price = check_if_type_exists_and_return_tree_price(request.type_id, db)
     location_id = create_location(request.location_name, request.latitude, request.longitude, db)
     progress_id = create_progress(db)
     donation_id = create_donation(request.donation_amount, db)
-    create_reward(request.user_id, "New Donation", "Thank you for your newly made donation", request.donation_amount,db)
+    create_reward(request.user_id, "New Donation", "Thank you for your newly made donation", request.donation_amount * tree_price, db)
 
     new_order = TreeOrder(
         type_id=request.type_id,
@@ -85,6 +86,7 @@ def get_list(offset: int, limit: int, user_id: int, db: Session):
             User.name,
             User.phone,
             TreeType.name,
+            TreeType.price,
             TreeProgress.is_planted,
             TreeProgress.date_planted,
             TreeProgress.health_status,
@@ -114,16 +116,17 @@ def get_list(offset: int, limit: int, user_id: int, db: Session):
         "user_name": order[2],
         "user_phone": order[3],
         "tree_type": order[4],
-        "is_planted": order[5],
-        "date_planted": order[6],
-        "health_status": order[7],
-        "donation_amount": order[8],
-        "donation_type": order[9],
-        "location_name": order[10],
-        "latitude": order[11],
-        "longitude": order[12],
-        "created_at": order[13],
-        "updated_at": order[14],
+        "tree_price": order[5],
+        "is_planted": order[6],
+        "date_planted": order[7],
+        "health_status": order[8],
+        "donation_amount": order[9],
+        "donation_type": order[10],
+        "location_name": order[11],
+        "latitude": order[12],
+        "longitude": order[13],
+        "created_at": order[14],
+        "updated_at": order[15],
         }
         for order in orders
     ]
@@ -132,11 +135,12 @@ def get_list(offset: int, limit: int, user_id: int, db: Session):
     return order_list
 
 
-def check_if_type_exists(type_id: int, db: Session):
+def check_if_type_exists_and_return_tree_price(type_id: int, db: Session):
     tree_type = db.get(TreeType, type_id)
     if not tree_type:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Tree type with id {type_id} not found")
+    return tree_type.price
 
 
 def create_location(name: str, latitude: Decimal, longitude: Decimal, db: Session):
@@ -173,6 +177,7 @@ def create_donation(amount: Decimal, db: Session):
 
 
 def create_reward(user_id: int, name: str, description: str, points: Decimal, db: Session):
+    points = points * 10
     new_reward = Reward(
         user_id=user_id,
         name=name,
