@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+from services.tree_order_service.order import create_reward
 from services.user_service.user_model import CreateUserModel, UpdateUserModel, RewardModel
 from database.models import User, Reward
 from datetime import datetime
@@ -85,3 +86,7 @@ def check_if_user_exists(email: str, db: Session):
     if user:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"User with email {email} already exists")
+
+
+def add_reward(user_id: int, db: Session):
+    create_reward(user_id, "Advertisement reward", "Thank you for watching advertisement and thus contributing", 5, db)

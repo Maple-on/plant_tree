@@ -30,7 +30,7 @@ def create(request: CreateOrderModel, db: Session):
 
 def exchange_reward(request: CreateOrderModel, db: Session):
     tree_price = check_if_type_exists_and_return_tree_price(request.type_id, db)
-    exchange_reward_points = request.donation_amount * tree_price * 10
+    exchange_reward_points = request.donation_amount * tree_price * 50
     check_rewards_points(exchange_reward_points, request.user_id, db)
     update_reward_amount(exchange_reward_points, request.user_id, db)
     location_id = create_location(request.location_name, request.latitude, request.longitude, db)
